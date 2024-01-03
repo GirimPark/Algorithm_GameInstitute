@@ -9,7 +9,8 @@
 using namespace std;
 
 set<string> wordSet;
-int g_errorCnt = 0;
+
+constexpr int OA_BUCKET_SIZE = 200000;
 
 void LoadWords()
 {
@@ -43,7 +44,7 @@ void Insert_HashMap_Chaining(vector<vector<string>>& chainingBucket, const strin
 }
 
 // 연속적인 메모리 공간이 부족하다
-void Insert_HashMap_OA(vector<pair<string, int>>& OABucket, const string& key)
+void Insert_HashMap_OA(vector<string>& OABucket, const string& key)
 {
 	size_t hash = 5381;
 
@@ -52,26 +53,27 @@ void Insert_HashMap_OA(vector<pair<string, int>>& OABucket, const string& key)
 		hash = ((hash << 5) + hash) + c;
 	}
 
-	hash %= 5381;
+	hash %= OA_BUCKET_SIZE;
+	size_t originHash = hash;
+	bool flag = false;
 
-	int collisionCnt = 0;
-	while (!OABucket[hash].first.empty())
+	while (!OABucket[hash].empty())
 	{
 		hash++;
-		collisionCnt++;
 
-		if (hash >= 5381)
-			break;
+		if (hash == OA_BUCKET_SIZE)
+		{
+			hash = 0;
+			flag = true;
+		}
+
+		if(hash==originHash && flag)
+		{
+			printf("Open Address Bucket Crushed!\n");
+		}
 	}
 
-	if (hash < 5381)
-	{
-		OABucket[hash] = make_pair(key, collisionCnt);
-	}
-	else
-	{
-		g_errorCnt++;
-	}
+	OABucket[hash] = key;
 }
 
 int main()
@@ -95,7 +97,7 @@ int main()
 	timer.GetElapsedTime();
 
 	/// myBucket 해시맵에 데이터 삽입(OpenAddress 기법)
-	vector<pair<string, int>> OABucket(5381);
+	vector<string> OABucket(OA_BUCKET_SIZE);
 
 	cout << "myBucket insert elapsed time(OpenAddress) : ";
 	timer.Start();
@@ -107,8 +109,6 @@ int main()
 
 	timer.Stop();
 	timer.GetElapsedTime();
-
-	cout << "OpenAddress Missed Some Data : " << g_errorCnt << endl;
 
 	///	stlBucket 해시맵에 데이터 삽입
 	unordered_map<string, string> stlBucket;
