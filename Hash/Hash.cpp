@@ -43,7 +43,7 @@ void Insert_HashMap_Chaining(vector<vector<string>>& chainingBucket, const strin
 	chainingBucket[hash].emplace_back(key);
 }
 
-// 연속적인 메모리 공간이 부족하다
+
 void Insert_HashMap_OA(vector<string>& OABucket, const string& key)
 {
 	size_t hash = 5381;
