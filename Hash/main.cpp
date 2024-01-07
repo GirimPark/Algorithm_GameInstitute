@@ -2,7 +2,9 @@
 #include <fstream>
 #include <set>
 #include <unordered_map>
-#include <vector>
+
+#include "ChainingHash.h"
+#include "OAHash.h"
 
 #include "Timer.h"
 
@@ -10,7 +12,7 @@ using namespace std;
 
 set<string> wordSet;
 
-constexpr int OA_BUCKET_SIZE = 200000;
+constexpr int BUCKET_SIZE = 200000;
 
 void LoadWords()
 {
@@ -22,58 +24,10 @@ void LoadWords()
 
 	while (file >> word)
 	{
-		wordSet.insert(word);
+		wordSet.emplace(word);
 	}
 
 	cout << "파일 로드 완료, 총 데이터 수 : " << wordSet.size() << endl;
-}
-
-// djb2 알고리즘
-void Insert_HashMap_Chaining(vector<vector<string>>& chainingBucket, const string& key)
-{
-	size_t hash = 5381;
-
-	for (char c : key)
-	{
-		hash = ((hash << 5) + hash) + c;
-	}
-
-	hash %= 5381;
-
-	chainingBucket[hash].emplace_back(key);
-}
-
-
-void Insert_HashMap_OA(vector<string>& OABucket, const string& key)
-{
-	size_t hash = 5381;
-
-	for (char c : key)
-	{
-		hash = ((hash << 5) + hash) + c;
-	}
-
-	hash %= OA_BUCKET_SIZE;
-	size_t originHash = hash;
-	bool flag = false;
-
-	while (!OABucket[hash].empty())
-	{
-		hash++;
-
-		if (hash == OA_BUCKET_SIZE)
-		{
-			hash = 0;
-			flag = true;
-		}
-
-		if(hash==originHash && flag)
-		{
-			printf("Open Address Bucket Crushed!\n");
-		}
-	}
-
-	OABucket[hash] = key;
 }
 
 int main()
@@ -81,37 +35,38 @@ int main()
 	LoadWords();
 
 	Timer timer;
+	HashFunctor<string> hashFunctor;
 
 	/// myBucket 해시맵에 데이터 삽입(Chaining 기법)
-	vector<vector<string>> chainingBucket(5381);
+	ChainingHash<string> chainingBucket(5381);
 
 	cout << "myBucket insert elapsed time(Chaining) : ";
 	timer.Start();
 
 	for (const auto& it : wordSet)
 	{
-		Insert_HashMap_Chaining(chainingBucket, it);
+		chainingBucket.Emplace(hashFunctor, it);
 	}
 
 	timer.Stop();
 	timer.GetElapsedTime();
 
 	/// myBucket 해시맵에 데이터 삽입(OpenAddress 기법)
-	vector<string> OABucket(OA_BUCKET_SIZE);
+	OAHash<string> OABucket(BUCKET_SIZE);
 
 	cout << "myBucket insert elapsed time(OpenAddress) : ";
 	timer.Start();
 
 	for (const auto& it : wordSet)
 	{
-		Insert_HashMap_OA(OABucket, it);
+		OABucket.Emplace(hashFunctor, it);
 	}
 
 	timer.Stop();
 	timer.GetElapsedTime();
 
 	///	stlBucket 해시맵에 데이터 삽입
-	unordered_map<string, string> stlBucket;
+	unordered_map<string, string> stlBucket(BUCKET_SIZE);
 
 	cout << "stlBucket insert elapsed time : ";
 	timer.Start();
